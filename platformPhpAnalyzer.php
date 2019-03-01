@@ -141,8 +141,81 @@ ob_start();
                         <strong>Start: </strong> <?php echo $lineData[0]['dateTime']->format(DATE_FORMAT) ?> &bull;
                         <strong>End: </strong>  <?php echo $lineData[count($lineData)-1]['dateTime']->format(DATE_FORMAT) ?>  <br>
 						<strong>Project: </strong>  <?php echo htmlspecialchars($selectedProject[1]) ?> &bull;
-						<strong>Requests Processed: </strong>  <?php echo count($lineData) ?>
-                    </p>
+						<strong>Requests Processed: </strong>  <?php echo count($lineData) ?> <br>
+						<?php
+						$dateIntervalInSeconds = $lineData[count($lineData)-1]['dateTime']->getTimestamp() - $lineData[0]['dateTime']->getTimestamp();
+						$requestsPerMinute = count($lineData) / ($dateIntervalInSeconds/60);
+						$requestsPerDay = count($lineData) / ($dateIntervalInSeconds/86400);
+						$requestsPerMonth = count($lineData) / ($dateIntervalInSeconds/2592000);
+						?>
+						<strong>Average Request Load: </strong> <?php echo round($requestsPerMinute,2) ?>/minute &bull; <?php echo round($requestsPerDay) ?>/day &bull; <?php echo round($requestsPerMonth) ?>/month <br>
+						<?php
+                        $averageMemoryUsage = 0;
+                        $peakMemoryUsage = 0;
+                        foreach($lineData as $line) {
+                        	$averageMemoryUsage = ($averageMemoryUsage + $line['peakMemory']) / 2;
+                        	if ($line['peakMemory'] > $peakMemoryUsage) {
+                                $peakMemoryUsage = $line['peakMemory'];
+							}
+                        }
+
+                        $platformPlans = [
+                            [
+                                'memory' => .5,
+                                'pageViewsMin' => 100000,
+                                'label' => 'Small'
+                            ],
+                        	[
+                        		'memory' => .8,
+								'pageViewsMin' => 200000,
+								'label' => 'Standard'
+							],
+                            [
+                                'memory' => 3,
+                                'pageViewsMin' => 500000,
+                                'label' => 'Medium'
+                            ],
+                            [
+                                'memory' => 6,
+                                'pageViewsMin' => 1000000,
+                                'label' => 'Large'
+                            ],
+                            [
+                                'memory' => 12,
+                                'pageViewsMin' => 2000000,
+                                'label' => 'X-Large'
+                            ],
+                            [
+                                'memory' => 24,
+                                'pageViewsMin' => 4000000,
+                                'label' => '2X-Large'
+                            ],
+						];
+
+                        ?>
+						<strong>Platform Plans:</strong> <br>
+						(% of page views / avg. % of total memory/minute / % of peak memory/minute)
+						<ul>
+						<?php
+                        foreach ($platformPlans as $platformPlan) {
+                        	?>
+							<li>
+								<?php echo htmlspecialchars($platformPlan['label']) ?>:
+                                <?php echo round(
+                                    ($requestsPerMonth/$platformPlan['pageViewsMin'])*100
+                                ) ?>% /
+								<?php echo round(
+									((($averageMemoryUsage*$requestsPerMinute)/1048576)/$platformPlan['memory']), 2
+								) ?>% /
+                                <?php echo round(
+                                    ((($peakMemoryUsage*$requestsPerMinute)/1048576)/$platformPlan['memory']), 2
+                                ) ?>%
+							</li>
+							<?php
+						}
+						?>
+						</ul>
+					</p>
 
                     <hr>
 
