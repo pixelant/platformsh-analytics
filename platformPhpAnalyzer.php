@@ -44,23 +44,31 @@ echo "\n";
 echo $selectedProject[1] . ' was selected.' . "\n";
 echo "\n";
 echo 'Please choose the number of lines to fetch:' . "\n";
-echo '    [1] 5000' . "\n";
-echo '    [2] 20000' . "\n";
-echo '    [3] Max' . "\n";
+echo '    [1] 250' . "\n";
+echo '    [2] 1000' . "\n";
+echo '    [3] 5000' . "\n";
+echo '    [4] 20000' . "\n";
+echo '    [5] Max' . "\n";
 
 do {
-    $lineSelection = (string) readline('Please select (default: [2]) > ');
+    $lineSelection = (string) readline('Please select (default: [4]) > ');
 
-    if (in_array($lineSelection, ['1', '2', '3', ''], true)) {
+    if (in_array($lineSelection, ['1', '2', '3', '4', '5', ''], true)) {
         switch ($lineSelection) {
-			case '1':
+            case '1':
+                $numberOfLines = '250';
+                break 2;
+			case '2':
+                $numberOfLines = '1000';
+                break 2;
+			case '3':
 				$numberOfLines = '5000';
 				break 2;
-            case '3':
+            case '5':
                 $numberOfLines = '999999';
                 break 2;
             default:
-            case '2':
+            case '4':
                 $numberOfLines = '20000';
                 break 2;
 		}
