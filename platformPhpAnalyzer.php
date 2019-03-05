@@ -56,12 +56,12 @@ do {
 			case '1':
 				$numberOfLines = '5000';
 				break 2;
-			case '2':
-                $numberOfLines = '20000';
-                break 2;
             case '3':
-			default:
                 $numberOfLines = '999999';
+                break 2;
+            default:
+            case '2':
+                $numberOfLines = '20000';
                 break 2;
 		}
     } else {
