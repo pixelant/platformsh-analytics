@@ -884,6 +884,8 @@ echo "\n";
 echo 'Analysis saved to file: ' . $fileName . "\n";
 echo "\n";
 
+passthru('open ' . escapeshellarg($fileName));
+
 function natksort(&$array) {
     ksort($array, SORT_NATURAL);
 }
