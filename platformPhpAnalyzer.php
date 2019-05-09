@@ -5,7 +5,7 @@ define('DATE_FORMAT', 'Y-m-d\TH:i:sP');
 
 define('DATE_FORMAT_HOUR', 'Y-m-d\TH');
 
-ini_set("memory_limit","350M");
+ini_set("memory_limit","500M");
 
 echo "\n";
 echo " ___ _      _    __                    _      _    _____  _____" . "\n";
