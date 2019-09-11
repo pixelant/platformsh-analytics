@@ -82,6 +82,17 @@ echo 'Getting the log... ' . "\n";
 exec('platform log --lines=' . escapeshellarg($numberOfLines) . ' --project=' . escapeshellarg($selectedProject[0]) . ' --environment=master php.access', $logData);
 echo 'Done' . "\n";
 echo "\n";
+
+echo "\n";
+$excludeTypo3 = (string) readline('Exclude /typo3/ requests? [y/n] (default: y) > ');
+if($excludeTypo3 === '' || $excludeTypo3 === 'y') {
+	$excludeTypo3 = true;
+	echo 'Excluding the /typo3/ path from statistics.' . "\n";
+} else {
+	$excludeTypo3 = false;
+    echo 'Including the /typo3/ path in statistics.' . "\n";
+}
+
 echo 'Processing ' . count($logData) . ' lines... ';
 
 $lineData = [];
@@ -91,7 +102,7 @@ for ($i = 0; $i < count($logData); $i++) {
 	//progressBar($lineCount, count($logData));
 
     $dateTime = DateTimeImmutable::createFromFormat(DATE_FORMAT, $line[0]);
-    if($dateTime === false) {
+    if($dateTime === false || ($excludeTypo3 && substr($line[8], 0, 7 ) === "/typo3/")) {
         continue;
     }
 
