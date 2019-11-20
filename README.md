@@ -1,5 +1,9 @@
 # Platform.sh Analytics Tools
 
+## Compatibility
+
+The tools have been tested on macOS, but should run elsewhere too.
+
 ## Initial setup
 
 ### Install the Platform.sh CLI
@@ -22,6 +26,10 @@ The tools automatically download and process logs from Platform.sh.
 
 Generates an HTML file with PHP analytics.
 
+Execution: `php platformPhpAnalyzer.php`
+
 ### `platformGoAccess.php`
 
 Generates an HTML file with HTTP analytics.
+
+Execution: `php platformGoAccess.php`
