@@ -818,7 +818,7 @@ ob_start();
                                             <td><?php echo $request['responseCode'] ?></td>
                                             <td><?php echo htmlspecialchars($request['requestUri']) ?></td>
                                         </tr>
-                                    <?
+                                    <?php
                                 }
                             ?>
                         </tbody>
@@ -847,7 +847,7 @@ ob_start();
                                 <td><?php echo $request['responseCode'] ?></td>
                                 <td><?php echo htmlspecialchars($request['requestUri']) ?></td>
                             </tr>
-                            <?
+                            <?php
                         }
                         ?>
                         </tbody>
@@ -876,7 +876,7 @@ ob_start();
                                 <td><?php echo $request['responseCode'] ?></td>
                                 <td><?php echo htmlspecialchars($request['requestUri']) ?></td>
                             </tr>
-                            <?
+                            <?php
                         }
                         ?>
                         </tbody>
