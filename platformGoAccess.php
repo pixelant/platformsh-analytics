@@ -10,7 +10,7 @@ foreach ($output as $platformProject) {
 
 echo 'Available Platform.sh projects:' . "\n";
 
-for ($i = 0; $i < count($platformProjects); $i++) {
+for ($i = 0, $iMax = count($platformProjects); $i < $iMax; $i++) {
 	echo '    [' . ($i+1) . ']  ' . $platformProjects[$i][1] . ' (' . $platformProjects[$i][0] . ')' . "\n";
 }
 
@@ -20,9 +20,9 @@ do {
     if (isset($platformProjects[$selectedProjectNumber-1])) {
     	$selectedProject = $platformProjects[$selectedProjectNumber-1];
     	break;
-	} else {
-    	echo 'ERROR: Invalid project number. Please try again.' . "\n";
 	}
+
+    echo 'ERROR: Invalid project number. Please try again.' . "\n";
 } while (true);
 
 echo "\n";
@@ -58,7 +58,7 @@ echo "\n";
 echo 'Getting the log... ' . "\n";
 exec('platform log -q --lines=' . escapeshellarg($numberOfLines) . ' --project=' . escapeshellarg($selectedProject[0]) . ' --environment=master access | goaccess --log-format="COMBINED" --html-prefs=\'{"theme":"bright"}\' -', $goaccessOutput);
 
-$fileName = preg_replace('/\\s+/', '_', preg_replace("/[^A-Za-z0-9]/", '', $selectedProject[1])) . '-goaccess-' .date('YmdHis') . '.html';
+$fileName = preg_replace('/\\s+/', '_', preg_replace('/[^A-Za-z0-9]/', '', $selectedProject[1])) . '-goaccess-' .date('YmdHis') . '.html';
 file_put_contents($fileName, implode("\n", $goaccessOutput));
 
 echo 'Statistics written to: ' . $fileName . "\n";
