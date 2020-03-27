@@ -56,7 +56,7 @@ do {
 
 echo "\n";
 echo 'Getting the log... ' . "\n";
-exec('platform log -q --lines=' . escapeshellarg($numberOfLines) . ' --project=' . escapeshellarg($selectedProject[0]) . ' --environment=master access | goaccess --log-format="COMBINED" --html-prefs=\'{"theme":"bright"}\' -', $goaccessOutput);
+exec('platform log -q --lines=' . escapeshellarg($numberOfLines) . ' --project=' . escapeshellarg($selectedProject[0]) . ' --environment=master access | LC_ALL=en_US.UTF-8  goaccess --log-format="COMBINED" --html-prefs=\'{"theme":"bright"}\' -', $goaccessOutput);
 
 $fileName = preg_replace('/\\s+/', '_', preg_replace('/[^A-Za-z0-9]/', '', $selectedProject[1])) . '-goaccess-' .date('YmdHis') . '.html';
 file_put_contents($fileName, implode("\n", $goaccessOutput));

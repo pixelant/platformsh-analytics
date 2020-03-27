@@ -1,0 +1,20 @@
+{
+    "name": "4viewture/platformsh-log-analyzer",
+    "description": "Analyzes the logfiles from platform.sh",
+    "type": "project",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Kay Strobach",
+            "email": "ks@4viewture.eu"
+        }
+    ],
+    "require": {
+        "symfony/console": "^4.4"
+    },
+    "autoload": {
+        "psr-4": {
+            "FourViewture\\PshLogAnalyzer\\": "src/"
+        }
+    }
+}
