@@ -25,7 +25,9 @@ foreach ($output as $platformProject) {
 
 echo 'Available Platform.sh projects:' . "\n";
 
-for ($i = 0; $i < count($platformProjects); $i++) {
+$noOfProjects = count($platformProjects);
+
+for ($i = 0; $i < $noOfProjects; $i++) {
 	echo '    [' . ($i+1) . ']  ' . $platformProjects[$i][1] . ' (' . $platformProjects[$i][0] . ')' . "\n";
 }
 
@@ -35,9 +37,9 @@ do {
     if (isset($platformProjects[$selectedProjectNumber-1])) {
     	$selectedProject = $platformProjects[$selectedProjectNumber-1];
     	break;
-	} else {
-    	echo 'ERROR: Invalid project number. Please try again.' . "\n";
 	}
+    echo 'ERROR: Invalid project number. Please try again.' . "\n";
+
 } while (true);
 
 echo "\n";
@@ -93,16 +95,19 @@ if($excludeTypo3 === '' || $excludeTypo3 === 'y') {
     echo 'Including the /typo3/ path in statistics.' . "\n";
 }
 
-echo 'Processing ' . count($logData) . ' lines... ';
+$noOfLogs = count($logData);
+
+echo 'Processing ' . $noOfLogs . ' lines... ';
 
 $lineData = [];
-for ($i = 0; $i < count($logData); $i++) {
+$lineCount = 0;
+for ($i = 0; $i < $noOfLogs; $i++) {
     $line = str_getcsv($logData[$i],' ');
 	$lineCount++;
 	//progressBar($lineCount, count($logData));
 
     $dateTime = DateTimeImmutable::createFromFormat(DATE_FORMAT, $line[0]);
-    if($dateTime === false || ($excludeTypo3 && substr($line[8], 0, 7 ) === "/typo3/")) {
+    if($dateTime === false || ($excludeTypo3 && strpos($line[8], '/typo3/') === 0)) {
         continue;
     }
 
@@ -159,7 +164,7 @@ ob_start();
                     <p>
                         <strong>Start: </strong> <?php echo $lineData[0]['dateTime']->format(DATE_FORMAT) ?> &bull;
                         <strong>End: </strong>  <?php echo $lineData[count($lineData)-1]['dateTime']->format(DATE_FORMAT) ?>  <br>
-						<strong>Project: </strong>  <?php echo htmlspecialchars($selectedProject[1]) ?> &bull;
+						<strong>Project: </strong>  <?php echo htmlspecialchars($selectedProject[1], ENT_QUOTES | ENT_HTML5) ?> &bull;
 						<strong>Requests Processed: </strong>  <?php echo count($lineData) ?> <br>
 						<?php
 						$dateIntervalInSeconds = $lineData[count($lineData)-1]['dateTime']->getTimestamp() - $lineData[0]['dateTime']->getTimestamp();
@@ -219,7 +224,7 @@ ob_start();
                         foreach ($platformPlans as $platformPlan) {
                         	?>
 							<li>
-								<?php echo htmlspecialchars($platformPlan['label']) ?>:
+								<?php echo htmlspecialchars($platformPlan['label'], ENT_QUOTES | ENT_HTML5) ?>:
                                 <?php echo round(
                                     ($requestsPerMonth/$platformPlan['pageViewsMin'])*100
                                 ) ?>% /
@@ -246,6 +251,18 @@ ob_start();
                     $errorResponses = [];
                     foreach($lineData as $line) {
                         $key = round($line['peakMemory']/1024) . 'M';
+                        if (!isset($memoryUsage[$key])) {
+                            $memoryUsage[$key] = 0;
+                        }
+                        if (!isset($averageExecutionTime[$key])) {
+                            $averageExecutionTime[$key] = 0;
+                        }
+                        if(!isset($averageCpu[$key])) {
+                            $averageCpu[$key] = 0;
+                        }
+                        if(!isset($errorResponses[$key])) {
+                            $errorResponses[$key] = 0;
+                        }
                         $memoryUsage[$key]++;
                         $averageExecutionTime[$key] = round(($averageExecutionTime[$key] + $line['executionTime'])/2);
                         $averageCpu[$key] = round(($averageCpu[$key] + $line['cpuPercentage'])/2);
@@ -380,6 +397,18 @@ ob_start();
                 $responseCodeExecutionTimeAverage = [];
                 foreach ($lineData as $line) {
                     $responseCode = $line['responseCode'];
+                    if (!isset($topResponseCodes[$responseCode])) {
+                        $topResponseCodes[$responseCode] = 0;
+                    }
+                    if (!isset($responseCodeMemoryAverage[$responseCode])) {
+                        $responseCodeMemoryAverage[$responseCode] = 0;
+                    }
+                    if (!isset($responseCodeCpuAverage[$responseCode])) {
+                        $responseCodeCpuAverage[$responseCode] = 0;
+                    }
+                    if (!isset($responseCodeExecutionTimeAverage[$responseCode])) {
+                        $responseCodeExecutionTimeAverage[$responseCode] = 0;
+                    }
                     $topResponseCodes[$responseCode]++;
                     $responseCodeMemoryAverage[$responseCode] = round(($responseCodeMemoryAverage[$responseCode]+$line['responseCode'])/2);
                     $responseCodeCpuAverage[$responseCode] = round(($responseCodeCpuAverage[$responseCode]+$line['cpuPercentage'])/2);
@@ -499,6 +528,21 @@ ob_start();
                 $averageMemoryPerTimeSlot = [];
                 foreach ($lineData as $line) {
                     $timeSlot = $line['dateTime']->format(DATE_FORMAT_HOUR);
+                    if (!isset($responseCodesByTime[$line['responseCode']][$timeSlot])) {
+                        $responseCodesByTime[$line['responseCode']][$timeSlot] = 0;
+                    }
+                    if (!isset($totalRequestsPerTimeSlot[$timeSlot])) {
+                        $totalRequestsPerTimeSlot[$timeSlot] = 0;
+                    }
+                    if (!isset($averageCpuPerTimeSlot[$timeSlot])) {
+                        $averageCpuPerTimeSlot[$timeSlot] = 0;
+                    }
+                    if (!isset($averageMemoryPerTimeSlot[$timeSlot])) {
+                        $averageMemoryPerTimeSlot[$timeSlot] = 0;
+                    }
+                    if (!isset($averageExecutionTimePerTimeSlot[$timeSlot])) {
+                        $averageExecutionTimePerTimeSlot[$timeSlot] = 0;
+                    }
                     $responseCodesByTime[$line['responseCode']][$timeSlot]++;
                     $totalRequestsPerTimeSlot[$timeSlot]++;
                     $averageCpuPerTimeSlot[$timeSlot] = round(($averageCpuPerTimeSlot[$timeSlot]+$line['cpuPercentage'])/2, 1);
