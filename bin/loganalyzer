@@ -4,7 +4,8 @@
 require_once 'vendor/autoload.php';
 
 $commands = [
-    new \FourViewture\PshLogAnalyzer\Command\GoAccess\AnalyzeCommand()
+    new \FourViewture\PshLogAnalyzer\Command\GoAccess\AnalyzeCommand(),
+    new \FourViewture\PshLogAnalyzer\Command\Php\AnalyzeCommand(),
 ];
 
 $application = new \Symfony\Component\Console\Application(
