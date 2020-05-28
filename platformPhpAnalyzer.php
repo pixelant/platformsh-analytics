@@ -171,12 +171,17 @@ ob_start();
 						<?php
                         $averageMemoryUsage = 0;
                         $peakMemoryUsage = 0;
-                        foreach($lineData as $line) {
-                        	$averageMemoryUsage = ($averageMemoryUsage + $line['peakMemory']) / 2;
+                        $totalMemoryUsage = 0;
+
+                        for ($lineNumber = 0; $lineNumber < count($lineData); $lineNumber++) {
+                            $line = $lineData[$lineNumber];
+                            $totalMemoryUsage += $line['peakMemory'];
                         	if ($line['peakMemory'] > $peakMemoryUsage) {
                                 $peakMemoryUsage = $line['peakMemory'];
 							}
                         }
+
+                        $averageMemoryUsage = $totalMemoryUsage / count($lineData);
 
                         $platformPlans = [
                             [
