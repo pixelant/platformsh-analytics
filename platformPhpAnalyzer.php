@@ -246,18 +246,31 @@ ob_start();
                     <?php
                     //Memory usage
                     $memoryUsage = [];
-                    $averageExecutionTime = [];
+                    $totalExecutionTime = [];
+                    $executionTimeCount = [];
                     $averageCpu = [];
+                    $totalCpu = [];
                     $errorResponses = [];
-                    foreach($lineData as $line) {
+
+                    for ($lineNumber = 0; $lineNumber < count($lineData); $lineNumber++) {
+                        $line = $lineData[$lineNumber];
                         $key = round($line['peakMemory']/1024) . 'M';
                         $memoryUsage[$key]++;
+                        $totalExecutionTime[$key] += $line['executionTime'];
+                        $executionTimeCount[$key]++;
                         $averageExecutionTime[$key] = round(($averageExecutionTime[$key] + $line['executionTime'])/2);
                         $averageCpu[$key] = round(($averageCpu[$key] + $line['cpuPercentage'])/2);
                         if ($line['responseCode'] >= 400) {
                             $errorResponses[$key]++;
                         }
                     }
+
+                    $averageExecutionTime = [];
+
+                    foreach ($totalExecutionTime as $key => $value) {
+                        $averageExecutionTime[$key] = round($value / $executionTimeCount[$key]);
+                    }
+
                     natksort($memoryUsage);
                     natksort($averageExecutionTime);
                     natksort($averageCpu);
