@@ -422,8 +422,6 @@ ob_start();
                     $responseCodeCpuAverage[$key] = round(array_sum($values) / count($values));
                 }
 
-                var_dump($responseCodeCpuAverage);
-
                 ?>
                 <script language="JavaScript">
                     $(function() {
@@ -526,94 +524,113 @@ ob_start();
             </div>
 
             <?php
-                $topResponseCodes = null;
-                $responseCodeMemoryAverage = null;
-                $responseCodeCpuAverage = null;
-                $responseCodeExecutionTimeAverage = null;
+            $topResponseCodes = null;
+            $responseCodeMemoryAverage = null;
+            $responseCodeCpuAverage = null;
+            $responseCodeExecutionTimeAverage = null;
 
-                $responseCodesByTime = [];
-                $dateTimeSlots = [];
-                $totalRequestsPerTimeSlot = [];
-                $averageCpuPerTimeSlot = [];
-                $averageMemoryPerTimeSlot = [];
-                foreach ($lineData as $line) {
-                    $timeSlot = $line['dateTime']->format(DATE_FORMAT_HOUR);
-                    $responseCodesByTime[$line['responseCode']][$timeSlot]++;
-                    $totalRequestsPerTimeSlot[$timeSlot]++;
-                    $averageCpuPerTimeSlot[$timeSlot] = round(($averageCpuPerTimeSlot[$timeSlot]+$line['cpuPercentage'])/2, 1);
-                    $averageMemoryPerTimeSlot[$timeSlot] = round(($averageMemoryPerTimeSlot[$timeSlot]+$line['peakMemory'])/2, 1);
-                    $averageExecutionTimePerTimeSlot[$timeSlot] = round(($averageExecutionTimePerTimeSlot[$timeSlot]+$line['executionTime'])/2, 1);
+            $responseCodesByTime = [];
+            $dateTimeSlots = [];
+            $totalRequestsPerTimeSlot = [];
 
-                    $dateTimeSlots[] = $timeSlot;
-                }
+            $cpuPerTimeSlot = [];
+            $memoryPerTimeSlot = [];
+            $executionTimePerTimeSlot = [];
 
-                $dateTimeSlots = array_unique($dateTimeSlots);
-                sort($dateTimeSlots);
+            foreach ($lineData as $line) {
+                $timeSlot = $line['dateTime']->format(DATE_FORMAT_HOUR);
+                $responseCodesByTime[$line['responseCode']][$timeSlot]++;
+                $totalRequestsPerTimeSlot[$timeSlot]++;
+                $cpuPerTimeSlot[$timeSlot][] = $line['cpuPercentage'];
+                $memoryPerTimeSlot[$timeSlot][] = $line['peakMemory'];
+                $executionTimePerTimeSlot[$timeSlot][] = $line['executionTime'];
 
-                $hoursPerSlot = 1;
-                if(count($dateTimeSlots) > 128) {
-                    $hoursPerSlot = ceil(count($dateTimeSlots) / 128);
-                }
+                $dateTimeSlots[] = $timeSlot;
+            }
 
-                //Reduce response code data to percentage and x y coordinates
-                $responseCodeDataSets = [];
-                $xLabels = [];
-                foreach (array_keys($responseCodesByTime) as $responseCode) {
-                    $responseCodeDataSets[$responseCode] = [];
-                    $timeSlotCounter = 0;
-                    for ($i = 0; $i < count($dateTimeSlots); $i++) {
-                        if (!in_array($dateTimeSlots[$i], $xLabels)) {
-                            $xLabels[] = $dateTimeSlots[$i];
-                        }
+            $cpuPerTimeSlotAverage = [];
+            $memoryPerTimeSlotAverage = [];
+            $executionTimePerTimeSlotAverage = [];
 
-                        $endI = $i + $hoursPerSlot;
-                        $combinedSum = 0;
-                        $j = 0;
-                        for(; $i < $endI && $i < count($dateTimeSlots); $i++) {
-                            $j++;
-                            $timeSlot = $dateTimeSlots[$i];
-                            if (isset($responseCodesByTime[$responseCode][$timeSlot])) {
-                                $combinedSum += round(($responseCodesByTime[$responseCode][$timeSlot] / $totalRequestsPerTimeSlot[$timeSlot]) * 100,
-                                    1);
-                            } else {
-                                $combinedSum += 0;
-                            }
-                        }
+            foreach ($cpuPerTimeSlot as $key => $values) {
+                $cpuPerTimeSlotAverage[$key] = round(array_sum($values) / count($values));
+            }
 
-                        $responseCodeDataSets[$responseCode][] = $combinedSum / $j;
-                    }
-                }
+            foreach ($memoryPerTimeSlot as $key => $values) {
+                $memoryPerTimeSlotAverage[$key] = round(array_sum($values) / count($values));
+            }
 
-                $totalRequestsDataSets = [];
-                $averageCpuDataSets = [];
-                $averageMemoryDataSets = [];
-                $averageExecutionTimeDataSets = [];
+            foreach ($executionTimePerTimeSlot as $key => $values) {
+                $executionTimePerTimeSlotAverage[$key] = round(array_sum($values) / count($values));
+            }
+
+            $dateTimeSlots = array_unique($dateTimeSlots);
+            sort($dateTimeSlots);
+
+            $hoursPerSlot = 1;
+            if(count($dateTimeSlots) > 128) {
+                $hoursPerSlot = ceil(count($dateTimeSlots) / 128);
+            }
+
+            //Reduce response code data to percentage and x y coordinates
+            $responseCodeDataSets = [];
+            $xLabels = [];
+            foreach (array_keys($responseCodesByTime) as $responseCode) {
+                $responseCodeDataSets[$responseCode] = [];
+                $timeSlotCounter = 0;
                 for ($i = 0; $i < count($dateTimeSlots); $i++) {
+                    if (!in_array($dateTimeSlots[$i], $xLabels)) {
+                        $xLabels[] = $dateTimeSlots[$i];
+                    }
 
                     $endI = $i + $hoursPerSlot;
-                    $combinedRequestsSum = 0;
-                    $combinedCpuDataSum = 0;
-                    $combinedMemoryDataSum = 0;
-                    $combinedExecutionTimeSum = 0;
+                    $combinedSum = 0;
                     $j = 0;
                     for(; $i < $endI && $i < count($dateTimeSlots); $i++) {
                         $j++;
                         $timeSlot = $dateTimeSlots[$i];
-
-                        $combinedRequestsSum += $totalRequestsPerTimeSlot[$timeSlot];
-                        $combinedCpuDataSum += $averageCpuPerTimeSlot[$timeSlot];
-                        $combinedMemoryDataSum += $averageMemoryPerTimeSlot[$timeSlot];
-                        $combinedExecutionTimeSum += $averageExecutionTimePerTimeSlot[$timeSlot];
+                        if (isset($responseCodesByTime[$responseCode][$timeSlot])) {
+                            $combinedSum += round(($responseCodesByTime[$responseCode][$timeSlot] / $totalRequestsPerTimeSlot[$timeSlot]) * 100,
+                                1);
+                        } else {
+                            $combinedSum += 0;
+                        }
                     }
 
-                    $totalRequestsDataSets[] = round($combinedRequestsSum / $j, 1);
-                    $averageCpuDataSets[] = round($combinedCpuDataSum / $j, 1);
-                    $averageMemoryDataSets[] = round($combinedMemoryDataSum / $j, 1);
-                    $averageExecutionTimeDataSets[] = round($combinedExecutionTimeSum / $j, 1);
+                    $responseCodeDataSets[$responseCode][] = $combinedSum / $j;
+                }
+            }
+
+            $totalRequestsDataSets = [];
+            $averageCpuDataSets = [];
+            $averageMemoryDataSets = [];
+            $averageExecutionTimeDataSets = [];
+            for ($i = 0; $i < count($dateTimeSlots); $i++) {
+
+                $endI = $i + $hoursPerSlot;
+                $combinedRequestsSum = 0;
+                $combinedCpuDataSum = 0;
+                $combinedMemoryDataSum = 0;
+                $combinedExecutionTimeSum = 0;
+                $j = 0;
+                for(; $i < $endI && $i < count($dateTimeSlots); $i++) {
+                    $j++;
+                    $timeSlot = $dateTimeSlots[$i];
+
+                    $combinedRequestsSum += $totalRequestsPerTimeSlot[$timeSlot];
+                    $combinedCpuDataSum += $cpuPerTimeSlotAverage[$timeSlot];
+                    $combinedMemoryDataSum += $memoryPerTimeSlotAverage[$timeSlot];
+                    $combinedExecutionTimeSum += $executionTimePerTimeSlotAverage[$timeSlot];
                 }
 
-                ksort($responseCodeDataSets);
-                ?>
+                $totalRequestsDataSets[] = round($combinedRequestsSum / $j, 1);
+                $averageCpuDataSets[] = round($combinedCpuDataSum / $j, 1);
+                $averageMemoryDataSets[] = round($combinedMemoryDataSum / $j, 1);
+                $averageExecutionTimeDataSets[] = round($combinedExecutionTimeSum / $j, 1);
+            }
+
+            ksort($responseCodeDataSets);
+            ?>
             <div class="row mt-4">
                 <div class="col-md-12">
                     <hr>
