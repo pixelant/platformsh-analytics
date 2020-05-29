@@ -246,29 +246,30 @@ ob_start();
                     <?php
                     //Memory usage
                     $memoryUsage = [];
-                    $totalExecutionTime = [];
-                    $executionTimeCount = [];
-                    $averageCpu = [];
-                    $totalCpu = [];
+                    $executionTimes = [];
+                    $cpus = [];
                     $errorResponses = [];
 
                     for ($lineNumber = 0; $lineNumber < count($lineData); $lineNumber++) {
                         $line = $lineData[$lineNumber];
                         $key = round($line['peakMemory']/1024) . 'M';
                         $memoryUsage[$key]++;
-                        $totalExecutionTime[$key] += $line['executionTime'];
-                        $executionTimeCount[$key]++;
-                        $averageExecutionTime[$key] = round(($averageExecutionTime[$key] + $line['executionTime'])/2);
-                        $averageCpu[$key] = round(($averageCpu[$key] + $line['cpuPercentage'])/2);
+                        $executionTimes[$key][] = $line['executionTime'];
+                        $cpus[$key][] = $line['cpuPercentage'];
                         if ($line['responseCode'] >= 400) {
                             $errorResponses[$key]++;
                         }
                     }
 
                     $averageExecutionTime = [];
+                    $averageCpu = [];
 
-                    foreach ($totalExecutionTime as $key => $value) {
-                        $averageExecutionTime[$key] = round($value / $executionTimeCount[$key]);
+                    foreach ($executionTimes as $key => $values) {
+                        $averageExecutionTime[$key] = round(array_sum($values) / count($values));
+                    }
+
+                    foreach ($cpus as $key => $values) {
+                        $averageCpu[$key] = round(array_sum($values) / count($values));
                     }
 
                     natksort($memoryUsage);
