@@ -394,16 +394,36 @@ ob_start();
                 $averageCpu = null;
 
                 $topResponseCodes = [];
-                $responseCodeMemoryAverage = [];
-                $responseCodeCpuAverage = [];
-                $responseCodeExecutionTimeAverage = [];
+                $responseCodeMemory = [];
+                $responseCodeCpu = [];
+                $responseCodeExecutionTime = [];
+
                 foreach ($lineData as $line) {
                     $responseCode = $line['responseCode'];
                     $topResponseCodes[$responseCode]++;
-                    $responseCodeMemoryAverage[$responseCode] = round(($responseCodeMemoryAverage[$responseCode]+$line['responseCode'])/2);
-                    $responseCodeCpuAverage[$responseCode] = round(($responseCodeCpuAverage[$responseCode]+$line['cpuPercentage'])/2);
-                    $responseCodeExecutionTimeAverage[$responseCode] = round(($responseCodeExecutionTimeAverage[$responseCode]+$line['executionTime'])/2);
+                    $responseCodeMemory[$responseCode][] = $line['peakMemory'];
+                    $responseCodeCpu[$responseCode][] = $line['cpuPercentage'];
+                    $responseCodeExecutionTime[$responseCode][] = $line['executionTime'];
                 }
+
+                $responseCodeMemoryAverage = [];
+                $responseCodeExecutionTimeAverage = [];
+                $responseCodeCpuAverage = [];
+
+                foreach ($responseCodeMemory as $key => $values) {
+                    $responseCodeMemoryAverage[$key] = round(array_sum($values) / count($values));
+                }
+
+                foreach ($responseCodeExecutionTime as $key => $values) {
+                    $responseCodeExecutionTimeAverage[$key] = round(array_sum($values) / count($values));
+                }
+
+                foreach ($responseCodeCpu as $key => $values) {
+                    $responseCodeCpuAverage[$key] = round(array_sum($values) / count($values));
+                }
+
+                var_dump($responseCodeCpuAverage);
+
                 ?>
                 <script language="JavaScript">
                     $(function() {
@@ -428,11 +448,11 @@ ob_start();
                         var topResponseCodes = new Chart(context, {
                             type: 'pie',
                             data: {
-                                labels: <?php echo json_encode(array_keys($responseCodeCpuAverage)) ?>,
+                                labels: <?php echo json_encode(array_keys($responseCodeMemoryAverage)) ?>,
                                 datasets: [
                                     {
                                         label: 'Request Memory Usage',
-                                        data: <?php echo json_encode(array_values($responseCodeCpuAverage)) ?>,
+                                        data: <?php echo json_encode(array_values($responseCodeMemoryAverage)) ?>,
                                         backgroundColor: pieBackgroundColors,
                                         borderColor: pieBorderColors
                                     }
