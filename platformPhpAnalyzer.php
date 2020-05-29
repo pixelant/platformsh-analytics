@@ -171,12 +171,17 @@ ob_start();
 						<?php
                         $averageMemoryUsage = 0;
                         $peakMemoryUsage = 0;
-                        foreach($lineData as $line) {
-                        	$averageMemoryUsage = ($averageMemoryUsage + $line['peakMemory']) / 2;
+                        $totalMemoryUsage = 0;
+
+                        for ($lineNumber = 0; $lineNumber < count($lineData); $lineNumber++) {
+                            $line = $lineData[$lineNumber];
+                            $totalMemoryUsage += $line['peakMemory'];
                         	if ($line['peakMemory'] > $peakMemoryUsage) {
                                 $peakMemoryUsage = $line['peakMemory'];
 							}
                         }
+
+                        $averageMemoryUsage = $totalMemoryUsage / count($lineData);
 
                         $platformPlans = [
                             [
@@ -241,18 +246,32 @@ ob_start();
                     <?php
                     //Memory usage
                     $memoryUsage = [];
-                    $averageExecutionTime = [];
-                    $averageCpu = [];
+                    $executionTimes = [];
+                    $cpus = [];
                     $errorResponses = [];
-                    foreach($lineData as $line) {
+
+                    for ($lineNumber = 0; $lineNumber < count($lineData); $lineNumber++) {
+                        $line = $lineData[$lineNumber];
                         $key = round($line['peakMemory']/1024) . 'M';
                         $memoryUsage[$key]++;
-                        $averageExecutionTime[$key] = round(($averageExecutionTime[$key] + $line['executionTime'])/2);
-                        $averageCpu[$key] = round(($averageCpu[$key] + $line['cpuPercentage'])/2);
+                        $executionTimes[$key][] = $line['executionTime'];
+                        $cpus[$key][] = $line['cpuPercentage'];
                         if ($line['responseCode'] >= 400) {
                             $errorResponses[$key]++;
                         }
                     }
+
+                    $averageExecutionTime = [];
+                    $averageCpu = [];
+
+                    foreach ($executionTimes as $key => $values) {
+                        $averageExecutionTime[$key] = round(array_sum($values) / count($values));
+                    }
+
+                    foreach ($cpus as $key => $values) {
+                        $averageCpu[$key] = round(array_sum($values) / count($values));
+                    }
+
                     natksort($memoryUsage);
                     natksort($averageExecutionTime);
                     natksort($averageCpu);
@@ -375,16 +394,34 @@ ob_start();
                 $averageCpu = null;
 
                 $topResponseCodes = [];
-                $responseCodeMemoryAverage = [];
-                $responseCodeCpuAverage = [];
-                $responseCodeExecutionTimeAverage = [];
+                $responseCodeMemory = [];
+                $responseCodeCpu = [];
+                $responseCodeExecutionTime = [];
+
                 foreach ($lineData as $line) {
                     $responseCode = $line['responseCode'];
                     $topResponseCodes[$responseCode]++;
-                    $responseCodeMemoryAverage[$responseCode] = round(($responseCodeMemoryAverage[$responseCode]+$line['responseCode'])/2);
-                    $responseCodeCpuAverage[$responseCode] = round(($responseCodeCpuAverage[$responseCode]+$line['cpuPercentage'])/2);
-                    $responseCodeExecutionTimeAverage[$responseCode] = round(($responseCodeExecutionTimeAverage[$responseCode]+$line['executionTime'])/2);
+                    $responseCodeMemory[$responseCode][] = $line['peakMemory'];
+                    $responseCodeCpu[$responseCode][] = $line['cpuPercentage'];
+                    $responseCodeExecutionTime[$responseCode][] = $line['executionTime'];
                 }
+
+                $responseCodeMemoryAverage = [];
+                $responseCodeExecutionTimeAverage = [];
+                $responseCodeCpuAverage = [];
+
+                foreach ($responseCodeMemory as $key => $values) {
+                    $responseCodeMemoryAverage[$key] = round(array_sum($values) / count($values));
+                }
+
+                foreach ($responseCodeExecutionTime as $key => $values) {
+                    $responseCodeExecutionTimeAverage[$key] = round(array_sum($values) / count($values));
+                }
+
+                foreach ($responseCodeCpu as $key => $values) {
+                    $responseCodeCpuAverage[$key] = round(array_sum($values) / count($values));
+                }
+
                 ?>
                 <script language="JavaScript">
                     $(function() {
@@ -409,11 +446,11 @@ ob_start();
                         var topResponseCodes = new Chart(context, {
                             type: 'pie',
                             data: {
-                                labels: <?php echo json_encode(array_keys($responseCodeCpuAverage)) ?>,
+                                labels: <?php echo json_encode(array_keys($responseCodeMemoryAverage)) ?>,
                                 datasets: [
                                     {
                                         label: 'Request Memory Usage',
-                                        data: <?php echo json_encode(array_values($responseCodeCpuAverage)) ?>,
+                                        data: <?php echo json_encode(array_values($responseCodeMemoryAverage)) ?>,
                                         backgroundColor: pieBackgroundColors,
                                         borderColor: pieBorderColors
                                     }
@@ -487,94 +524,113 @@ ob_start();
             </div>
 
             <?php
-                $topResponseCodes = null;
-                $responseCodeMemoryAverage = null;
-                $responseCodeCpuAverage = null;
-                $responseCodeExecutionTimeAverage = null;
+            $topResponseCodes = null;
+            $responseCodeMemoryAverage = null;
+            $responseCodeCpuAverage = null;
+            $responseCodeExecutionTimeAverage = null;
 
-                $responseCodesByTime = [];
-                $dateTimeSlots = [];
-                $totalRequestsPerTimeSlot = [];
-                $averageCpuPerTimeSlot = [];
-                $averageMemoryPerTimeSlot = [];
-                foreach ($lineData as $line) {
-                    $timeSlot = $line['dateTime']->format(DATE_FORMAT_HOUR);
-                    $responseCodesByTime[$line['responseCode']][$timeSlot]++;
-                    $totalRequestsPerTimeSlot[$timeSlot]++;
-                    $averageCpuPerTimeSlot[$timeSlot] = round(($averageCpuPerTimeSlot[$timeSlot]+$line['cpuPercentage'])/2, 1);
-                    $averageMemoryPerTimeSlot[$timeSlot] = round(($averageMemoryPerTimeSlot[$timeSlot]+$line['peakMemory'])/2, 1);
-                    $averageExecutionTimePerTimeSlot[$timeSlot] = round(($averageExecutionTimePerTimeSlot[$timeSlot]+$line['executionTime'])/2, 1);
+            $responseCodesByTime = [];
+            $dateTimeSlots = [];
+            $totalRequestsPerTimeSlot = [];
 
-                    $dateTimeSlots[] = $timeSlot;
-                }
+            $cpuPerTimeSlot = [];
+            $memoryPerTimeSlot = [];
+            $executionTimePerTimeSlot = [];
 
-                $dateTimeSlots = array_unique($dateTimeSlots);
-                sort($dateTimeSlots);
+            foreach ($lineData as $line) {
+                $timeSlot = $line['dateTime']->format(DATE_FORMAT_HOUR);
+                $responseCodesByTime[$line['responseCode']][$timeSlot]++;
+                $totalRequestsPerTimeSlot[$timeSlot]++;
+                $cpuPerTimeSlot[$timeSlot][] = $line['cpuPercentage'];
+                $memoryPerTimeSlot[$timeSlot][] = $line['peakMemory'];
+                $executionTimePerTimeSlot[$timeSlot][] = $line['executionTime'];
 
-                $hoursPerSlot = 1;
-                if(count($dateTimeSlots) > 128) {
-                    $hoursPerSlot = ceil(count($dateTimeSlots) / 128);
-                }
+                $dateTimeSlots[] = $timeSlot;
+            }
 
-                //Reduce response code data to percentage and x y coordinates
-                $responseCodeDataSets = [];
-                $xLabels = [];
-                foreach (array_keys($responseCodesByTime) as $responseCode) {
-                    $responseCodeDataSets[$responseCode] = [];
-                    $timeSlotCounter = 0;
-                    for ($i = 0; $i < count($dateTimeSlots); $i++) {
-                        if (!in_array($dateTimeSlots[$i], $xLabels)) {
-                            $xLabels[] = $dateTimeSlots[$i];
-                        }
+            $cpuPerTimeSlotAverage = [];
+            $memoryPerTimeSlotAverage = [];
+            $executionTimePerTimeSlotAverage = [];
 
-                        $endI = $i + $hoursPerSlot;
-                        $combinedSum = 0;
-                        $j = 0;
-                        for(; $i < $endI && $i < count($dateTimeSlots); $i++) {
-                            $j++;
-                            $timeSlot = $dateTimeSlots[$i];
-                            if (isset($responseCodesByTime[$responseCode][$timeSlot])) {
-                                $combinedSum += round(($responseCodesByTime[$responseCode][$timeSlot] / $totalRequestsPerTimeSlot[$timeSlot]) * 100,
-                                    1);
-                            } else {
-                                $combinedSum += 0;
-                            }
-                        }
+            foreach ($cpuPerTimeSlot as $key => $values) {
+                $cpuPerTimeSlotAverage[$key] = round(array_sum($values) / count($values));
+            }
 
-                        $responseCodeDataSets[$responseCode][] = $combinedSum / $j;
-                    }
-                }
+            foreach ($memoryPerTimeSlot as $key => $values) {
+                $memoryPerTimeSlotAverage[$key] = round(array_sum($values) / count($values));
+            }
 
-                $totalRequestsDataSets = [];
-                $averageCpuDataSets = [];
-                $averageMemoryDataSets = [];
-                $averageExecutionTimeDataSets = [];
+            foreach ($executionTimePerTimeSlot as $key => $values) {
+                $executionTimePerTimeSlotAverage[$key] = round(array_sum($values) / count($values));
+            }
+
+            $dateTimeSlots = array_unique($dateTimeSlots);
+            sort($dateTimeSlots);
+
+            $hoursPerSlot = 1;
+            if(count($dateTimeSlots) > 128) {
+                $hoursPerSlot = ceil(count($dateTimeSlots) / 128);
+            }
+
+            //Reduce response code data to percentage and x y coordinates
+            $responseCodeDataSets = [];
+            $xLabels = [];
+            foreach (array_keys($responseCodesByTime) as $responseCode) {
+                $responseCodeDataSets[$responseCode] = [];
+                $timeSlotCounter = 0;
                 for ($i = 0; $i < count($dateTimeSlots); $i++) {
+                    if (!in_array($dateTimeSlots[$i], $xLabels)) {
+                        $xLabels[] = $dateTimeSlots[$i];
+                    }
 
                     $endI = $i + $hoursPerSlot;
-                    $combinedRequestsSum = 0;
-                    $combinedCpuDataSum = 0;
-                    $combinedMemoryDataSum = 0;
-                    $combinedExecutionTimeSum = 0;
+                    $combinedSum = 0;
                     $j = 0;
                     for(; $i < $endI && $i < count($dateTimeSlots); $i++) {
                         $j++;
                         $timeSlot = $dateTimeSlots[$i];
-
-                        $combinedRequestsSum += $totalRequestsPerTimeSlot[$timeSlot];
-                        $combinedCpuDataSum += $averageCpuPerTimeSlot[$timeSlot];
-                        $combinedMemoryDataSum += $averageMemoryPerTimeSlot[$timeSlot];
-                        $combinedExecutionTimeSum += $averageExecutionTimePerTimeSlot[$timeSlot];
+                        if (isset($responseCodesByTime[$responseCode][$timeSlot])) {
+                            $combinedSum += round(($responseCodesByTime[$responseCode][$timeSlot] / $totalRequestsPerTimeSlot[$timeSlot]) * 100,
+                                1);
+                        } else {
+                            $combinedSum += 0;
+                        }
                     }
 
-                    $totalRequestsDataSets[] = round($combinedRequestsSum / $j, 1);
-                    $averageCpuDataSets[] = round($combinedCpuDataSum / $j, 1);
-                    $averageMemoryDataSets[] = round($combinedMemoryDataSum / $j, 1);
-                    $averageExecutionTimeDataSets[] = round($combinedExecutionTimeSum / $j, 1);
+                    $responseCodeDataSets[$responseCode][] = $combinedSum / $j;
+                }
+            }
+
+            $totalRequestsDataSets = [];
+            $averageCpuDataSets = [];
+            $averageMemoryDataSets = [];
+            $averageExecutionTimeDataSets = [];
+            for ($i = 0; $i < count($dateTimeSlots); $i++) {
+
+                $endI = $i + $hoursPerSlot;
+                $combinedRequestsSum = 0;
+                $combinedCpuDataSum = 0;
+                $combinedMemoryDataSum = 0;
+                $combinedExecutionTimeSum = 0;
+                $j = 0;
+                for(; $i < $endI && $i < count($dateTimeSlots); $i++) {
+                    $j++;
+                    $timeSlot = $dateTimeSlots[$i];
+
+                    $combinedRequestsSum += $totalRequestsPerTimeSlot[$timeSlot];
+                    $combinedCpuDataSum += $cpuPerTimeSlotAverage[$timeSlot];
+                    $combinedMemoryDataSum += $memoryPerTimeSlotAverage[$timeSlot];
+                    $combinedExecutionTimeSum += $executionTimePerTimeSlotAverage[$timeSlot];
                 }
 
-                ksort($responseCodeDataSets);
-                ?>
+                $totalRequestsDataSets[] = round($combinedRequestsSum / $j, 1);
+                $averageCpuDataSets[] = round($combinedCpuDataSum / $j, 1);
+                $averageMemoryDataSets[] = round($combinedMemoryDataSum / $j, 1);
+                $averageExecutionTimeDataSets[] = round($combinedExecutionTimeSum / $j, 1);
+            }
+
+            ksort($responseCodeDataSets);
+            ?>
             <div class="row mt-4">
                 <div class="col-md-12">
                     <hr>
