@@ -27,7 +27,7 @@ class AnalyzeCommand extends Command
                 'lines',
                 'l',
                 InputOption::VALUE_OPTIONAL,
-                'The Number of lines to analyze',
+                'The Number of lines to analyze'
                 1000000
             );
     }
