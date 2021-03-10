@@ -96,6 +96,7 @@ if($excludeTypo3 === '' || $excludeTypo3 === 'y') {
 echo 'Processing ' . count($logData) . ' lines... ';
 
 $lineData = [];
+$lineCount = 0;
 for ($i = 0; $i < count($logData); $i++) {
     $line = str_getcsv($logData[$i],' ');
 	$lineCount++;
@@ -253,10 +254,16 @@ ob_start();
                     for ($lineNumber = 0; $lineNumber < count($lineData); $lineNumber++) {
                         $line = $lineData[$lineNumber];
                         $key = round($line['peakMemory']/1024) . 'M';
+                        if (!array_key_exists($key, $memoryUsage)) {
+                        	$memoryUsage[$key] = 0;
+                        }
                         $memoryUsage[$key]++;
                         $executionTimes[$key][] = $line['executionTime'];
                         $cpus[$key][] = $line['cpuPercentage'];
                         if ($line['responseCode'] >= 400) {
+                        	if (!array_key_exists($key, $errorResponses)) {
+                        		$errorResponses[$key] = 0;
+	                        }
                             $errorResponses[$key]++;
                         }
                     }
@@ -283,6 +290,9 @@ ob_start();
                     foreach ($memoryUsage as $key=>$value) {
                         $runningSum -= $value;
                         $memoryUsagePercentOfTotal[$key] = round(($runningSum/$memoryUsageSum)*100, 1);
+                        if (!array_key_exists($key, $errorResponses)) {
+                            $errorResponses[$key] = 0;
+                        }
                         $errorResponses[$key] = round(($errorResponses[$key]/$value)*100, 1);
                     }
                     ?>
@@ -400,6 +410,9 @@ ob_start();
 
                 foreach ($lineData as $line) {
                     $responseCode = $line['responseCode'];
+                    if (!array_key_exists($responseCode, $topResponseCodes)) {
+                        $topResponseCodes[$responseCode] = 0;
+                    }
                     $topResponseCodes[$responseCode]++;
                     $responseCodeMemory[$responseCode][] = $line['peakMemory'];
                     $responseCodeCpu[$responseCode][] = $line['cpuPercentage'];
@@ -539,7 +552,16 @@ ob_start();
 
             foreach ($lineData as $line) {
                 $timeSlot = $line['dateTime']->format(DATE_FORMAT_HOUR);
+                if (!array_key_exists($line['responseCode'], $responseCodesByTime)) {
+                    $responseCodesByTime[$line['responseCode']] = [];
+                }
+                if (!array_key_exists($timeSlot, $responseCodesByTime[$line['responseCode']])) {
+                    $responseCodesByTime[$line['responseCode']][$timeSlot] = 0;
+                }
                 $responseCodesByTime[$line['responseCode']][$timeSlot]++;
+                if (!array_key_exists($timeSlot, $totalRequestsPerTimeSlot)) {
+                    $totalRequestsPerTimeSlot[$timeSlot] = 0;
+                }
                 $totalRequestsPerTimeSlot[$timeSlot]++;
                 $cpuPerTimeSlot[$timeSlot][] = $line['cpuPercentage'];
                 $memoryPerTimeSlot[$timeSlot][] = $line['peakMemory'];
