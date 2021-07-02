@@ -117,7 +117,7 @@ if (!isset($argv[3])) {
 }
 
 echo 'Getting the log... ' . "\n";
-exec('platform log --lines=' . escapeshellarg($numberOfLines) . ' --project=' . escapeshellarg($selectedProject[0]) . ' --environment=master php.access', $logData);
+exec('platform log --lines=' . escapeshellarg($numberOfLines) . ' --project=' . escapeshellarg($selectedProject[0]) . ' --environment=' . escapeshellarg($selectedEnvironment[0]) . ' php.access', $logData);
 echo 'Done' . "\n";
 echo "\n";
 
