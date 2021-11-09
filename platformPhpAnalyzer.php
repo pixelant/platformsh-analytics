@@ -1,9 +1,9 @@
 #!/usr/bin/env php
 <?php
 
-define('DATE_FORMAT', 'Y-m-d\TH:i:sP');
+define('DATE_FORMAT', 'Y-m-d G:i:s');
 
-define('DATE_FORMAT_HOUR', 'Y-m-d\TH');
+define('DATE_FORMAT_HOUR', 'Y-m-d G');
 
 ini_set("memory_limit","500M");
 
@@ -17,21 +17,21 @@ echo "\n";
 
 if (!isset($argv[1])) {
     exec('platform projects --format=csv --no-header', $output);
-    
+
     $platformProjects = [];
     foreach ($output as $platformProject) {
         $platformProjects[] = str_getcsv($platformProject);
     }
-    
+
     echo 'Available Platform.sh projects:' . "\n";
-    
+
     for ($i = 0; $i < count($platformProjects); $i++) {
         echo '    [' . ($i+1) . ']  ' . $platformProjects[$i][1] . ' (' . $platformProjects[$i][0] . ')' . "\n";
     }
-    
+
     do {
         $selectedProjectNumber = (int) readline('Enter a project number > ');
-    
+
         if (isset($platformProjects[$selectedProjectNumber-1])) {
             $selectedProject = $platformProjects[$selectedProjectNumber-1];
             break;
@@ -39,7 +39,7 @@ if (!isset($argv[1])) {
             echo 'ERROR: Invalid project number. Please try again.' . "\n";
         }
     } while (true);
-    
+
     echo "\n";
     echo $selectedProject[1] . ' was selected.' . "\n";
 } else {
@@ -84,10 +84,10 @@ if (!isset($argv[3])) {
     echo '    [3] 5000' . "\n";
     echo '    [4] 20000' . "\n";
     echo '    [5] Max' . "\n";
-    
+
     do {
         $lineSelection = (string) readline('Please select (default: [4]) > ');
-    
+
         if (in_array($lineSelection, ['1', '2', '3', '4', '5', ''], true)) {
             switch ($lineSelection) {
                 case '1':
@@ -136,24 +136,27 @@ echo 'Processing ' . count($logData) . ' lines... ';
 $lineData = [];
 $lineCount = 0;
 for ($i = 0; $i < count($logData); $i++) {
-    $line = str_getcsv($logData[$i],' ');
+    $line = explode(' ', $logData[$i]);
 	$lineCount++;
 	//progressBar($lineCount, count($logData));
 
-    $dateTime = DateTimeImmutable::createFromFormat(DATE_FORMAT, $line[0]);
-    if($dateTime === false || ($excludeTypo3 && substr($line[8], 0, 7 ) === "/typo3/")) {
+    // 0          1        2   3   4      5  6    7  8      9
+    // 2021-11-06 02:20:33 GET 301 11.095 ms 2048 kB 90.13% /request-uri
+
+    $dateTime = DateTimeImmutable::createFromFormat(DATE_FORMAT, $line[0] . ' ' . $line[1]);
+    if($dateTime === false || ($excludeTypo3 && substr($line[9], 0, 7 ) === "/typo3/")) {
         continue;
     }
 
     $lineData[] = [
         'dateTime' => $dateTime,
-        'requestMethod' => $line[1],
-        'responseCode' => (int) $line[2],
-        'executionTime' => (float) $line[3],
-        'peakMemory' => (int) $line[5],
-        'cpuPercentage' => (float) substr($line[7], 0, -1),
-        'requestUri' => $line[8],
-        'parsedUri' => parse_url($line[8]),
+        'requestMethod' => $line[2],
+        'responseCode' => (int) $line[3],
+        'executionTime' => (float) $line[4],
+        'peakMemory' => (int) $line[6],
+        'cpuPercentage' => (float) substr($line[8], 0, -1),
+        'requestUri' => $line[9],
+        'parsedUri' => parse_url($line[9]),
     ];
 }
 
@@ -926,6 +929,7 @@ ob_start();
                         <tbody>
                             <?php
                                 foreach ($topRequestsByMemory as $request) {
+                                    if (!empty($request)) {
                                     ?>
                                         <tr>
                                             <td class="table-info"><?php echo $request['peakMemory'] ?></td>
@@ -935,6 +939,7 @@ ob_start();
                                             <td><?php echo htmlspecialchars($request['requestUri']) ?></td>
                                         </tr>
                                     <?php
+                                    }
                                 }
                             ?>
                         </tbody>
