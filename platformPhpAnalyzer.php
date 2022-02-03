@@ -42,6 +42,41 @@ if (!isset($_SERVER['argv'][1]) || !file_exists($_SERVER['argv'][1])) {
 
 	echo "\n";
 	echo $selectedProject[1] . ' was selected.' . "\n";
+} else {
+    exec('platform project:info title --format=csv --no-header --project=' . escapeshellarg($argv[1]), $projectTitle);
+    $selectedProject[0] = $argv[1];
+    $selectedProject[1] = $projectTitle[0];
+}
+
+if (!isset($argv[2])) {
+    exec('platform environment:list --format=csv --no-header --project=' . escapeshellarg($selectedProject[0]), $environmentOutput);
+
+    $platformEnvironments = [];
+    foreach ($environmentOutput as $platformEnvironment) {
+        $platformEnvironments[] = str_getcsv($platformEnvironment);
+    }
+
+    echo 'Available Platform.sh environments:' . "\n";
+
+    for ($i = 0; $i < count($platformEnvironments); $i++) {
+        echo '    [' . ($i+1) . ']  ' . $platformEnvironments[$i][1] . ' (' . $platformEnvironments[$i][0] . ')' . "\n";
+    }
+
+    do {
+        $selectedEnvironmentNumber = (int) readline('Enter a environment number > ');
+
+        if (isset($platformEnvironments[$selectedEnvironmentNumber-1])) {
+            $selectedEnvironment = $platformEnvironments[$selectedEnvironmentNumber-1];
+            break;
+        } else {
+            echo 'ERROR: Invalid environment number. Please try again.' . "\n";
+        }
+    } while (true);
+} else {
+    $selectedEnvironment[0] = $argv[2];
+}
+
+if (!isset($argv[3])) {
 	echo "\n";
 	echo 'Please choose the number of lines to fetch:' . "\n";
 	echo '    [1] 250' . "\n";
@@ -78,6 +113,10 @@ if (!isset($_SERVER['argv'][1]) || !file_exists($_SERVER['argv'][1])) {
 	} while (true);
 
 	echo "\n";
+} else {
+    $numberOfLines = $argv[3];
+}
+
 	echo 'Getting the log... ' . "\n";
 	exec('platform log --lines=' . escapeshellarg($numberOfLines) . ' --project=' . escapeshellarg($selectedProject[0]) . ' --environment=master php.access', $logData);
 	echo 'Done' . "\n";
@@ -102,6 +141,7 @@ if($excludeTypo3 === '' || $excludeTypo3 === 'y') {
 echo 'Processing ' . count($logData) . ' lines... ';
 
 $lineData = [];
+$lineCount = 0;
 for ($i = 0; $i < count($logData); $i++) {
     $line = str_getcsv($logData[$i],' ');
 	$lineCount++;
@@ -259,10 +299,16 @@ ob_start();
                     for ($lineNumber = 0; $lineNumber < count($lineData); $lineNumber++) {
                         $line = $lineData[$lineNumber];
                         $key = round($line['peakMemory']/1024) . 'M';
+                        if (!array_key_exists($key, $memoryUsage)) {
+                        	$memoryUsage[$key] = 0;
+                        }
                         $memoryUsage[$key]++;
                         $executionTimes[$key][] = $line['executionTime'];
                         $cpus[$key][] = $line['cpuPercentage'];
                         if ($line['responseCode'] >= 400) {
+                        	if (!array_key_exists($key, $errorResponses)) {
+                        		$errorResponses[$key] = 0;
+	                        }
                             $errorResponses[$key]++;
                         }
                     }
@@ -289,6 +335,9 @@ ob_start();
                     foreach ($memoryUsage as $key=>$value) {
                         $runningSum -= $value;
                         $memoryUsagePercentOfTotal[$key] = round(($runningSum/$memoryUsageSum)*100, 1);
+                        if (!array_key_exists($key, $errorResponses)) {
+                            $errorResponses[$key] = 0;
+                        }
                         $errorResponses[$key] = round(($errorResponses[$key]/$value)*100, 1);
                     }
                     ?>
@@ -406,6 +455,9 @@ ob_start();
 
                 foreach ($lineData as $line) {
                     $responseCode = $line['responseCode'];
+                    if (!array_key_exists($responseCode, $topResponseCodes)) {
+                        $topResponseCodes[$responseCode] = 0;
+                    }
                     $topResponseCodes[$responseCode]++;
                     $responseCodeMemory[$responseCode][] = $line['peakMemory'];
                     $responseCodeCpu[$responseCode][] = $line['cpuPercentage'];
@@ -545,7 +597,16 @@ ob_start();
 
             foreach ($lineData as $line) {
                 $timeSlot = $line['dateTime']->format(DATE_FORMAT_HOUR);
+                if (!array_key_exists($line['responseCode'], $responseCodesByTime)) {
+                    $responseCodesByTime[$line['responseCode']] = [];
+                }
+                if (!array_key_exists($timeSlot, $responseCodesByTime[$line['responseCode']])) {
+                    $responseCodesByTime[$line['responseCode']][$timeSlot] = 0;
+                }
                 $responseCodesByTime[$line['responseCode']][$timeSlot]++;
+                if (!array_key_exists($timeSlot, $totalRequestsPerTimeSlot)) {
+                    $totalRequestsPerTimeSlot[$timeSlot] = 0;
+                }
                 $totalRequestsPerTimeSlot[$timeSlot]++;
                 $cpuPerTimeSlot[$timeSlot][] = $line['cpuPercentage'];
                 $memoryPerTimeSlot[$timeSlot][] = $line['peakMemory'];
