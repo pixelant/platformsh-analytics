@@ -5,7 +5,7 @@ define('DATE_FORMAT', 'Y-m-d\TH:i:sP');
 
 define('DATE_FORMAT_HOUR', 'Y-m-d\TH');
 
-ini_set("memory_limit","500M");
+ini_set("memory_limit","-1");
 
 echo "\n";
 echo " ___ _      _    __                    _      _    _____  _____" . "\n";
@@ -15,72 +15,78 @@ echo "|_| |_\__,_|\__|_| \___/_| |_|_|_(_)__/_||_| |___||_____||_____|" . "\n";
 echo "                                             - A N A L Y Z E R -\n";
 echo "\n";
 
+if (!isset($_SERVER['argv'][1]) || !file_exists($_SERVER['argv'][1])) {
+	exec('platform projects --format=csv --no-header --count=0', $output);
 
-exec('platform projects --format=csv --no-header', $output);
-
-$platformProjects = [];
-foreach ($output as $platformProject) {
-    $platformProjects[] = str_getcsv($platformProject);
-}
-
-echo 'Available Platform.sh projects:' . "\n";
-
-for ($i = 0; $i < count($platformProjects); $i++) {
-	echo '    [' . ($i+1) . ']  ' . $platformProjects[$i][1] . ' (' . $platformProjects[$i][0] . ')' . "\n";
-}
-
-do {
-    $selectedProjectNumber = (int) readline('Enter a project number > ');
-
-    if (isset($platformProjects[$selectedProjectNumber-1])) {
-    	$selectedProject = $platformProjects[$selectedProjectNumber-1];
-    	break;
-	} else {
-    	echo 'ERROR: Invalid project number. Please try again.' . "\n";
+	$platformProjects = [];
+	foreach ($output as $platformProject) {
+		$platformProjects[] = str_getcsv($platformProject);
 	}
-} while (true);
 
-echo "\n";
-echo $selectedProject[1] . ' was selected.' . "\n";
-echo "\n";
-echo 'Please choose the number of lines to fetch:' . "\n";
-echo '    [1] 250' . "\n";
-echo '    [2] 1000' . "\n";
-echo '    [3] 5000' . "\n";
-echo '    [4] 20000' . "\n";
-echo '    [5] Max' . "\n";
+	echo 'Available Platform.sh projects:' . "\n";
 
-do {
-    $lineSelection = (string) readline('Please select (default: [4]) > ');
+	for ($i = 0; $i < count($platformProjects); $i++) {
+		echo '    [' . ($i+1) . ']  ' . $platformProjects[$i][1] . ' (' . $platformProjects[$i][0] . ')' . "\n";
+	}
 
-    if (in_array($lineSelection, ['1', '2', '3', '4', '5', ''], true)) {
-        switch ($lineSelection) {
-            case '1':
-                $numberOfLines = '250';
-                break 2;
-			case '2':
-                $numberOfLines = '1000';
-                break 2;
-			case '3':
-				$numberOfLines = '5000';
-				break 2;
-            case '5':
-                $numberOfLines = '999999';
-                break 2;
-            default:
-            case '4':
-                $numberOfLines = '20000';
-                break 2;
+	do {
+		$selectedProjectNumber = (int) readline('Enter a project number > ');
+
+		if (isset($platformProjects[$selectedProjectNumber-1])) {
+			$selectedProject = $platformProjects[$selectedProjectNumber-1];
+			break;
+		} else {
+			echo 'ERROR: Invalid project number. Please try again.' . "\n";
 		}
-    } else {
-        echo 'ERROR: Invalid option. Please try again.' . "\n";
-    }
-} while (true);
+	} while (true);
 
-echo "\n";
-echo 'Getting the log... ' . "\n";
-exec('platform log --lines=' . escapeshellarg($numberOfLines) . ' --project=' . escapeshellarg($selectedProject[0]) . ' --environment=master php.access', $logData);
-echo 'Done' . "\n";
+	echo "\n";
+	echo $selectedProject[1] . ' was selected.' . "\n";
+	echo "\n";
+	echo 'Please choose the number of lines to fetch:' . "\n";
+	echo '    [1] 250' . "\n";
+	echo '    [2] 1000' . "\n";
+	echo '    [3] 5000' . "\n";
+	echo '    [4] 20000' . "\n";
+	echo '    [5] Max' . "\n";
+
+	do {
+		$lineSelection = (string) readline('Please select (default: [4]) > ');
+
+		if (in_array($lineSelection, ['1', '2', '3', '4', '5', ''], true)) {
+			switch ($lineSelection) {
+				case '1':
+					$numberOfLines = '250';
+					break 2;
+				case '2':
+					$numberOfLines = '1000';
+					break 2;
+				case '3':
+					$numberOfLines = '5000';
+					break 2;
+				case '5':
+					$numberOfLines = '999999';
+					break 2;
+				default:
+				case '4':
+					$numberOfLines = '20000';
+					break 2;
+			}
+		} else {
+			echo 'ERROR: Invalid option. Please try again.' . "\n";
+		}
+	} while (true);
+
+	echo "\n";
+	echo 'Getting the log... ' . "\n";
+	exec('platform log --lines=' . escapeshellarg($numberOfLines) . ' --project=' . escapeshellarg($selectedProject[0]) . ' --environment=master php.access', $logData);
+	echo 'Done' . "\n";
+} else {
+	echo 'Getting the log file ' . $_SERVER['argv'][1] . "\n";
+	$logData = explode("\n", file_get_contents($_SERVER['argv'][1]));
+	echo 'Done' . "\n";
+}
+
 echo "\n";
 
 echo "\n";
