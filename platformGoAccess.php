@@ -10,7 +10,7 @@ echo "                                             - A N A L Y Z E R -\n";
 echo "\n";
 
 if (!isset($argv[1])) {
-    exec('platform projects --format=csv --no-header', $projectOutput);
+    exec('platform projects --format=csv --no-header --count=0', $projectOutput);
     
     $platformProjects = [];
     foreach ($projectOutput as $platformProject) {
