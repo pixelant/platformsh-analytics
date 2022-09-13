@@ -117,13 +117,14 @@ if (!isset($argv[3])) {
     $numberOfLines = $argv[3];
 }
 
-	echo 'Getting the log... ' . "\n";
-	exec('platform log --lines=' . escapeshellarg($numberOfLines) . ' --project=' . escapeshellarg($selectedProject[0]) . ' --environment=master php.access', $logData);
-	echo 'Done' . "\n";
+if(!isset($_SERVER['argv'][1]) || !file_exists($_SERVER['argv'][1])){
+    echo 'Getting the log... ' . "\n";
+    exec('platform log --lines=' . escapeshellarg($numberOfLines) . ' --project=' . escapeshellarg($selectedProject[0]) . ' --environment=' . escapeshellarg($selectedEnvironment[0]) . ' php.access', $logData);
+    echo 'Done' . "\n";
 } else {
-	echo 'Getting the log file ' . $_SERVER['argv'][1] . "\n";
-	$logData = explode("\n", file_get_contents($_SERVER['argv'][1]));
-	echo 'Done' . "\n";
+    echo 'Getting the log file ' . $_SERVER['argv'][1] . "\n";
+    $logData = explode("\n", file_get_contents($_SERVER['argv'][1]));
+    echo 'Done' . "\n";
 }
 
 echo "\n";
